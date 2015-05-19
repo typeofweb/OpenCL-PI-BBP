@@ -12,6 +12,11 @@ find_library(OPENCL_LIBRARIES
 	PATH_SUFFIXES ${PLATFORM}${BITNESS} ${BITNESS_SUFFIX}
 )
 
+message(STATUS "OpenCL found: ${OPENCL_FOUND}")
+message(STATUS "OpenCL includes: ${OPENCL_INCLUDE_DIRS}")
+message(STATUS "OpenCL CXX includes: ${OPENCL_HAS_CPP_BINDINGS}")
+message(STATUS "OpenCL libraries: ${OPENCL_LIBRARIES}")
+
 add_executable(PI2 ${SOURCE_FILES})
 
 enable_testing()
@@ -19,3 +24,5 @@ add_executable(PI2_SPEC ${TEST_FILES})
 add_test(PI2_SPEC ${CMAKE_CURRENT_BINARY_DIR}/PI2_SPEC)
 add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --verbose
                   DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/PI2_SPEC)
+
+target_link_libraries(PI2 ${OPENCL_LIBRARIES})

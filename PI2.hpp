@@ -5,6 +5,8 @@
 #ifndef PI2_PI2_HPP
 #define PI2_PI2_HPP
 
+#include <cmath>
+
 unsigned int modularPow(int base, int exponent, int modulus) {
     unsigned int c = 1;
     for (unsigned int e = 0; e < exponent; ++e) {
