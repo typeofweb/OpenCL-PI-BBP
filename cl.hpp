@@ -4923,8 +4923,8 @@ public:
                 __GET_KERNEL_WORK_GROUP_INFO_ERR);
     }
 
-    template <cl_int name> typename
-    detail::param_traits<detail::cl_kernel_work_group_info, name>::param_type
+    template <cl_int name>
+    const unsigned long
         getWorkGroupInfo(const Device& device, cl_int* err = NULL) const
     {
         typename detail::param_traits<

@@ -63,13 +63,14 @@ int main() {
 
         cl::CommandQueue queue(context, default_device);
 
-        auto pi = cl::make_kernel<int, cl::Buffer, cl::LocalSpaceArg>(program, "pi");
+        auto pi = cl::make_kernel<int, int, cl::Buffer>(program, "pi");
 
-        const int WORK_GROUP_SIZE = 4;
-        const int NUMBER_OF_WORK_GROUPS = 1;
-        const int DECIMAL_PLACES = 4;
-
-        auto work_group_size = ko_pi.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(default_device);
+        const int DECIMAL_PLACES = 1;
+        const int FROM = 20000;
+        const ::size_t MAX_WORK_GROUPS = default_device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
+        const ::size_t WORK_GROUP_SIZE = ko_pi.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(default_device);
+        const ::size_t CALCULATED_WORK_GROUPS = static_cast<size_t>(std::ceil(static_cast<float>(DECIMAL_PLACES) / static_cast<float>(WORK_GROUP_SIZE)));
+        const ::size_t NUMBER_OF_WORK_GROUPS = CALCULATED_WORK_GROUPS > MAX_WORK_GROUPS ? MAX_WORK_GROUPS : CALCULATED_WORK_GROUPS;
 
         std::vector<float> piHexDigits(DECIMAL_PLACES);
 
@@ -79,24 +80,24 @@ int main() {
 
         auto start = std::chrono::system_clock::now();
 
-//        std::cout << "3.";
         pi(cl::EnqueueArgs(
                    queue,
-                   cl::NDRange(NUMBER_OF_WORK_GROUPS * WORK_GROUP_SIZE),
                    cl::NDRange(WORK_GROUP_SIZE)
            ),
+           FROM,
            DECIMAL_PLACES,
-           d_piHexDigits,
-           cl::Local(sizeof(float) * WORK_GROUP_SIZE)
+           d_piHexDigits
         );
-
         cl::copy(queue, d_piHexDigits, piHexDigits.begin(), piHexDigits.end());
+
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
+
+        std::cout << "3.";
         for (auto &&i: piHexDigits) {
-            std::cout << i << " ";
+            std::cout << hexFromFloat(i);
         }
         std::cout << std::endl;
 
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
         auto elapsed_time = duration.count() / 1000.0;
         std::cout << "Time: " << elapsed_time << "s" << std::endl;
     } catch (const std::exception &e) {

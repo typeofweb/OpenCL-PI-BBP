@@ -24,38 +24,15 @@ float functionP(const int coef, const int n) {
     return sum;
 }
 
-__kernel void pi(const int decimalPlaces, __global float* piDigits, __local float* partialSums) {
-    const int SUMS_PER_DECIMAl = 4;
-
+__kernel void pi(const int from, const int decimalPlaces, __global float* piDigits) {
     const int local_id = get_local_id(0) + get_group_id(0) * get_local_size(0);
     const int local_size = get_local_size(0);
 
-    piDigits[local_id / SUMS_PER_DECIMAl] = 10.0f;
+    for (int i = local_id; i < decimalPlaces; i += local_size) {
+        const int decimalPlace = from + i - 1;
+        float sum = 4.0f * functionP(1, decimalPlace) - 2.0f * functionP(4, decimalPlace) - functionP(5, decimalPlace) - functionP(6, decimalPlace);
 
-
-
-    for (int i = local_id; i < decimalPlaces * SUMS_PER_DECIMAl; i += local_size) {
-        const int whichSum = i % SUMS_PER_DECIMAl;
-        const int iteration = i / SUMS_PER_DECIMAl;
-        float sum;
-
-        if (whichSum == 0) {
-            sum = 4.0f * functionP(1, iteration - 1);
-        } else if (whichSum == 1) {
-            sum = -2.0f * functionP(4, iteration - 1);
-        } else if (whichSum == 2) {
-            sum = - functionP(5, iteration - 1);
-        } else {
-            sum = - functionP(6, iteration - 1);
-        }
-
-        partialSums[i] = sum;
+        piDigits[i] = sum - (int)sum + 1.0f;
     }
-
-    if (local_id % SUMS_PER_DECIMAl == 0) {
-        for (int i = local_id; i < decimalPlaces * SUMS_PER_DECIMAl; i += local_size) {
-            float s = partialSums[i] + partialSums[i + 1] + partialSums[i + 2] + partialSums[i + 3];
-            piDigits[i / SUMS_PER_DECIMAl] = (s - (int)(s) + 1.0f);
-        }
-    }
+    //barrier(CLK_GLOBAL_MEM_FENCE);
 }
