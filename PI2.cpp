@@ -6,6 +6,7 @@
 #include <array>
 #include <fstream>
 #include <numeric>
+#include <functional>
 #include <chrono>
 #include <vector>
 
@@ -44,8 +45,6 @@ int main() {
     cl::Platform default_platform;
     cl::Device default_device;
 
-    unsigned whichDigit = 1;
-
     try {
         default_platform = getDefaultPlatform();
         default_device = getDefaultDeviceForPlatform(default_platform);
@@ -69,48 +68,40 @@ int main() {
 
         cl::CommandQueue queue(context);
 
-        // pi(
-        //     const int number_of_iterations,
-        //     const float step_size,
-        //     __local  float* local_sums,
-        //     __global float* piHexDigits
-        // )
-        auto pi = cl::make_kernel<int, cl::Buffer>(program, "pi");
+        auto pi = cl::make_kernel<int, cl::Buffer, cl::LocalSpaceArg>(program, "pi");
 
-        // auto WORK_GROUP_SIZE = ko_pi.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(default_device);
-        int WORK_GROUP_SIZE = 4;
-        int NUMBER_OF_WORK_GROUPS = 1;
+        const int WORK_GROUP_SIZE = 4;
+        const int NUMBER_OF_WORK_GROUPS = 1;
+        const int DECIMAL_PLACES = 4;
 
-        // if (NUMBER_OF_WORK_GROUPS < 1) {
-        //     NUMBER_OF_WORK_GROUPS = default_device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-        //     WORK_GROUP_SIZE = static_cast<size_t>(MAX_STEPS / (NUMBER_OF_WORK_GROUPS * MAX_ITERATIONS));
-        // }
-
-        std::vector<float> piHexDigits(static_cast<unsigned long>(NUMBER_OF_WORK_GROUPS));
+        std::vector<float> piHexDigits(DECIMAL_PLACES);
 
         std::cout << NUMBER_OF_WORK_GROUPS << " work groups of size " << WORK_GROUP_SIZE << "\n";
 
-        cl::Buffer d_piHexDigits(context, CL_MEM_WRITE_ONLY, sizeof(float) * NUMBER_OF_WORK_GROUPS);
+        cl::Buffer d_piHexDigits(context, CL_MEM_WRITE_ONLY, sizeof(float) * DECIMAL_PLACES);
 
         auto start = std::chrono::system_clock::now();
 
+//        std::cout << "3.";
         pi(cl::EnqueueArgs(
                    queue,
-                   cl::NullRange
+                   cl::NDRange(NUMBER_OF_WORK_GROUPS * WORK_GROUP_SIZE),
+                   cl::NDRange(WORK_GROUP_SIZE)
            ),
-           whichDigit,
-           d_piHexDigits
+           DECIMAL_PLACES,
+           d_piHexDigits,
+           cl::Local(sizeof(float) * WORK_GROUP_SIZE)
         );
 
         cl::copy(queue, d_piHexDigits, piHexDigits.begin(), piHexDigits.end());
+        for (auto &&i: piHexDigits) {
+            std::cout << hexFromFloat(i) << " ";
+        }
+        std::cout << std::endl;
 
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds> (std::chrono::system_clock::now() - start);
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
         auto elapsed_time = duration.count() / 1000.0;
-
-        std::cout.precision(16);
         std::cout << "Time: " << elapsed_time << "s" << std::endl;
-        std::cout << "Result: " << hexFromFloat(piHexDigits[0]) << std::endl;
-
     } catch (const std::exception &e) {
         std::cerr << e.what();
         exit(1);
