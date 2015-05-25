@@ -57,22 +57,19 @@ int main() {
         std::string source;
         source = getKernelCodeFromFile("pi_kernel.cl");
 
-        cl::Program program(context, source);
-        err = program.build({default_device});
-        if (err != CL_SUCCESS) {
-            std::cerr << program.getBuildInfo<CL_PROGRAM_BUILD_LOG>(default_device) << std::endl;
-            checkError(err, "PROGRAM_BUILD");
-        }
+        cl::Program program(context, source, true);
 
         cl::Kernel ko_pi(program, "pi");
 
-        cl::CommandQueue queue(context);
+        cl::CommandQueue queue(context, default_device);
 
         auto pi = cl::make_kernel<int, cl::Buffer, cl::LocalSpaceArg>(program, "pi");
 
         const int WORK_GROUP_SIZE = 4;
         const int NUMBER_OF_WORK_GROUPS = 1;
         const int DECIMAL_PLACES = 4;
+
+        auto work_group_size = ko_pi.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(default_device);
 
         std::vector<float> piHexDigits(DECIMAL_PLACES);
 
@@ -95,7 +92,7 @@ int main() {
 
         cl::copy(queue, d_piHexDigits, piHexDigits.begin(), piHexDigits.end());
         for (auto &&i: piHexDigits) {
-            std::cout << hexFromFloat(i) << " ";
+            std::cout << i << " ";
         }
         std::cout << std::endl;
 

@@ -24,29 +24,38 @@ float functionP(const int coef, const int n) {
     return sum;
 }
 
-__kernel void pi(const int whichDigit, __global float* piDigits, __local float* partialSums) {
-    int local_id = get_local_id(0);
+__kernel void pi(const int decimalPlaces, __global float* piDigits, __local float* partialSums) {
+    const int SUMS_PER_DECIMAl = 4;
 
-    int whichSum = local_id % 4;
+    const int local_id = get_local_id(0) + get_group_id(0) * get_local_size(0);
+    const int local_size = get_local_size(0);
 
-    float sum;
+    piDigits[local_id / SUMS_PER_DECIMAl] = 10.0f;
 
-    if (whichSum == 0) {
-        sum = 4.0f * functionP(1, whichDigit - 1);
-    } else if (whichSum == 1) {
-        sum = -2.0f * functionP(4, whichDigit - 1);
-    } else if (whichSum == 2) {
-        sum = - functionP(5, whichDigit - 1);
-    } else {
-        sum = - functionP(6, whichDigit - 1);
+
+
+    for (int i = local_id; i < decimalPlaces * SUMS_PER_DECIMAl; i += local_size) {
+        const int whichSum = i % SUMS_PER_DECIMAl;
+        const int iteration = i / SUMS_PER_DECIMAl;
+        float sum;
+
+        if (whichSum == 0) {
+            sum = 4.0f * functionP(1, iteration - 1);
+        } else if (whichSum == 1) {
+            sum = -2.0f * functionP(4, iteration - 1);
+        } else if (whichSum == 2) {
+            sum = - functionP(5, iteration - 1);
+        } else {
+            sum = - functionP(6, iteration - 1);
+        }
+
+        partialSums[i] = sum;
     }
 
-    partialSums[local_id] = sum;
-    //barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
-
-    if (whichSum == 0) {
-        float s = partialSums[local_id] + partialSums[local_id + 1] + partialSums[local_id + 2] + partialSums[local_id + 3];
-
-        piDigits[local_id] = (s - (int)(s) + 1.0f);
+    if (local_id % SUMS_PER_DECIMAl == 0) {
+        for (int i = local_id; i < decimalPlaces * SUMS_PER_DECIMAl; i += local_size) {
+            float s = partialSums[i] + partialSums[i + 1] + partialSums[i + 2] + partialSums[i + 3];
+            piDigits[i / SUMS_PER_DECIMAl] = (s - (int)(s) + 1.0f);
+        }
     }
 }
