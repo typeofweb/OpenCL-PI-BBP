@@ -40,8 +40,7 @@ std::string getKernelCodeFromFile(std::string filename) {
     return std::string((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 }
 
-int main() {
-    cl_int err;
+int main(int argc, char* argv[]) {
     cl::Platform default_platform;
     cl::Device default_device;
 
@@ -65,14 +64,15 @@ int main() {
 
         auto pi = cl::make_kernel<int, int, cl::Buffer>(program, "pi");
 
-        const int DECIMAL_PLACES = 1;
-        const int FROM = 20000;
+        int FROM = argc > 1 ? std::stoi(argv[1]) : 1;
+        int DECIMAL_PLACES = argc > 2 ? std::stoi(argv[2]) : 100;
+
         const ::size_t MAX_WORK_GROUPS = default_device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>();
         const ::size_t WORK_GROUP_SIZE = ko_pi.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(default_device);
         const ::size_t CALCULATED_WORK_GROUPS = static_cast<size_t>(std::ceil(static_cast<float>(DECIMAL_PLACES) / static_cast<float>(WORK_GROUP_SIZE)));
         const ::size_t NUMBER_OF_WORK_GROUPS = CALCULATED_WORK_GROUPS > MAX_WORK_GROUPS ? MAX_WORK_GROUPS : CALCULATED_WORK_GROUPS;
 
-        std::vector<float> piHexDigits(DECIMAL_PLACES);
+        std::vector<float> piHexDigits((unsigned long) DECIMAL_PLACES);
 
         std::cout << NUMBER_OF_WORK_GROUPS << " work groups of size " << WORK_GROUP_SIZE << "\n";
 
@@ -92,11 +92,13 @@ int main() {
 
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
 
-        std::cout << "3.";
+        if (FROM == 1) {
+            std::cout << "3.";
+        }
         for (auto &&i: piHexDigits) {
             std::cout << hexFromFloat(i);
         }
-        std::cout << std::endl;
+        std::cout << "\7" << std::endl;
 
         auto elapsed_time = duration.count() / 1000.0;
         std::cout << "Time: " << elapsed_time << "s" << std::endl;

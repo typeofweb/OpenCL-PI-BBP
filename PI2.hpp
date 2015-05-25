@@ -24,23 +24,27 @@ float functionP(const int coef, const int n) {
         sum -= static_cast<int>(sum);
     }
 
-    for (int k = n + 1; k < n + 100; ++k) {
+    /*for (int k = n + 1; k < n + 100; ++k) {
         int partial = (8 * k + coef);
         sum += (std::pow(16.0f, n - k)) / partial;
         sum -= static_cast<int>(sum);
-    }
+    }*/
 
     return sum;
 }
 
 float bbpAlgorithm(int n) {
     n -= 1;
-    float sum = 4.0f * functionP(1, n) - 2.0f * functionP(4, n) - functionP(5, n) - functionP(6, n);
+    float s1, s2, s3, s4;
+    s1 = functionP(1, n);
+    s2 = functionP(4, n);
+    s3 = functionP(5, n);
+    s4 = functionP(6, n);
+    float sum = 4.0f * s1 - 2.0f * s2 - s3 - s4;
     return sum - static_cast<int>(sum) + 1.0f;
 }
 
 char hexFromFloat (float x) {
-    int i;
     double y;
     char hx[] = "0123456789ABCDEF";
 
