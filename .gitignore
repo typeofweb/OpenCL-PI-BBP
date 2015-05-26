@@ -2,5 +2,7 @@
 CMakeFiles
 *.cmake
 CmakeCache.txt
+Testing
 Makefile
 Temporary
+PI2
