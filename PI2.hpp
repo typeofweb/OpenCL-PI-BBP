@@ -44,13 +44,16 @@ float bbpAlgorithm(int n) {
     return sum - static_cast<int>(sum) + 1.0f;
 }
 
-char hexFromFloat (float x) {
-    double y;
-    char hx[] = "0123456789ABCDEF";
-
+unsigned decIntFromHexFloat(float x) {
+    float y;
     y = std::abs(x);
     y = 16.0f * (y - std::floor(y));
-    return hx[static_cast<int>(y)];
+    return static_cast<unsigned>(y);
+}
+
+char hexFromFloat (float x) {
+    char hx[] = "0123456789ABCDEF";
+    return hx[decIntFromHexFloat(x)];
 }
 
 #endif //PI2_PI2_HPP
